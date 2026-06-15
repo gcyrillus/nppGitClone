@@ -4,7 +4,7 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <tchar.h>
-// Définition du message Notepad++ pour ouvrir un dossier comme espace de travail
+// Definition of the Notepad++ message to open a folder as a workspace
 #ifndef NPPM_OPENFOLDERASWORKSPACE
     #define NPPM_OPENFOLDERASWORKSPACE (WM_USER + 1096)
 #endif
@@ -33,7 +33,7 @@ extern "C" __declspec(dllexport) const TCHAR* getName()
     return TEXT("nppGitClone");
 }
 
-// LA FONCTION MANQUANTE : Dit à Notepad++ que le plugin est bien en Unicode
+// THE MISSING FUNCTION: Tells Notepad++ that the plugin is indeed in Unicode
 extern "C" __declspec(dllexport) bool isUnicode()
 {
     return true;
@@ -68,13 +68,13 @@ bool isValidGitUrl(const TCHAR* url)
 {
     if (!url || _tcslen(url) == 0) return false;
 
-    // Caractères strictement interdits dans une URL Git légitime 
-    // qui pourraient altérer la ligne de commande (notamment les guillemets)
+    // Strictly forbidden characters in a legitimate Git URL
+    // that could alter the command line (especially quotes)
     const TCHAR* forbiddenChars = TEXT("\"';`<>");
     
     if (_tcspbrk(url, forbiddenChars) != NULL)
     {
-        return false; // Contient un caractère dangereux
+        return false; // Contains a dangerous character
     }
     return true;
 }
@@ -83,13 +83,13 @@ void cloneRepositoryCommand()
 {
     TCHAR repoUrl[512] = TEXT("");
     
-    // Appel de notre vraie boite de dialogue avec champ texte
+    // Calling our real dialog box with text field
     if (!showInputDialog(nppData._nppHandle, repoUrl, sizeof(repoUrl) / sizeof(TCHAR)))
     {
         return; 
     }
     
-    // --- 1. NETTOYAGE SÉCURITÉ : On retire les espaces, \r et \n invisibles en fin d'URL ---
+    // --- 1. SECURITY CLEANUP: Remove invisible spaces, \r and \n at the end of the URL ---
     size_t urlLen = _tcslen(repoUrl);
     while (urlLen > 0 && (repoUrl[urlLen - 1] == TEXT(' ') || 
                           repoUrl[urlLen - 1] == TEXT('\r') || 
@@ -101,7 +101,7 @@ void cloneRepositoryCommand()
     
     if (_tcslen(repoUrl) == 0)
     {
-        MessageBox(nppData._nppHandle, TEXT("Veuillez entrer une URL valide."), 
+        MessageBox(nppData._nppHandle, TEXT("Please enter a valid URL."), 
         TEXT("nppGitClone"), MB_OK | MB_ICONWARNING);
         return;
     }
@@ -115,7 +115,7 @@ void cloneRepositoryCommand()
     TCHAR repoName[MAX_PATH];
     extractRepoName(repoUrl, repoName, sizeof(repoName) / sizeof(TCHAR));
     
-    // Nettoyage subsidiaire du repoName par précaution
+    // Additional cleanup of repoName as a precaution
     size_t nameLen = _tcslen(repoName);
     while (nameLen > 0 && (repoName[nameLen - 1] == TEXT(' ') || 
                            repoName[nameLen - 1] == TEXT('\r') || 
@@ -173,27 +173,27 @@ void cloneRepositoryCommand()
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 
-    // En cas d'erreur de clonage, on alerte et on quitte
+    // If cloning fails, alert and exit
     if (exitCode != 0)
     {
         TCHAR errorMsg[512];
         _stprintf_s(errorMsg, sizeof(errorMsg) / sizeof(TCHAR),
-                    TEXT("Le clonage Git a échoué (Code de sortie: %d).\n\nVérifiez l'URL du dépôt ou votre connexion internet."),
+                    TEXT("Git cloning failed (Exit code: %d).\n\nCheck the repository URL or your internet connection."),
                     exitCode);
         MessageBox(nppData._nppHandle, errorMsg,
-                   TEXT("nppGitClone - Erreur"), MB_OK | MB_ICONERROR);
+                   TEXT("nppGitClone - Error"), MB_OK | MB_ICONERROR);
         return;
     }
 
     // --- SÉCURITÉ SUCCÈS : Exécuté uniquement si exitCode == 0 ---
     TCHAR message[512];
     _stprintf_s(message, sizeof(message) / sizeof(TCHAR), 
-                TEXT("Dépôt cloné avec succès !\n\nAjout à l'espace de travail..."), fullPath);
-    MessageBox(nppData._nppHandle, message, TEXT("nppGitClone - Succès"), MB_OK | MB_ICONINFORMATION);
+                TEXT("Repository cloned successfully!\n\nAdding to workspace..."), fullPath);
+    MessageBox(nppData._nppHandle, message, TEXT("nppGitClone - Success"), MB_OK | MB_ICONINFORMATION);
 
-    // --- SIMULATION DE DROP POUR LE PANNEAU DE GAUCHE ---
-    // On prépare la structure de Drop de fichiers Windows
-    // Un DROPFILES suivi du chemin terminé par un double \0\0
+    // --- DROP SIMULATION FOR THE LEFT PANEL ---
+    // Prepare the Windows file Drop structure
+    // A DROPFILES followed by the path terminated by a double \0\0
     size_t pathLen = _tcslen(fullPath);
     size_t bufferSize = sizeof(DROPFILES) + ((pathLen + 2) * sizeof(TCHAR));
     
@@ -204,16 +204,16 @@ void cloneRepositoryCommand()
         if (df)
         {
             df->pFiles = sizeof(DROPFILES);
-            df->fWide = TRUE; // Mode Unicode (wchar_t) indispensable
+            df->fWide = TRUE; // Unicode mode (wchar_t) required
             
-            // Copie du chemin juste après la structure
+            // Copy path right after the structure
             TCHAR* pPath = (TCHAR*)((BYTE*)df + sizeof(DROPFILES));
             _tcscpy_s(pPath, pathLen + 1, fullPath);
             
-            // Le double zéro final est garanti par le flag GHND de GlobalAlloc
+            // The final double zero is guaranteed by the GHND flag of GlobalAlloc
             GlobalUnlock(hGlobal);
             
-            // On envoie le message de Drop directement à la fenêtre principale de Notepad++
+            // We send the Drop message directly to the main window of Notepad++
             SendMessage(nppData._nppHandle, WM_DROPFILES, (WPARAM)hGlobal, 0);
         }
     }
