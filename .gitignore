@@ -1,0 +1,30 @@
+# Build outputs
+bin/
+obj/
+*.dll
+*.lib
+*.exp
+*.obj
+*.pdb
+*.ilk
+
+# Visual Studio
+.vs/
+*.sln.DotSettings
+*.VC.db
+*.VC.VC.opendb
+*.vcxproj.user
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+*.lnk
+
+# Temporary files
+*.tmp
+*.log
