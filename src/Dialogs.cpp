@@ -7,14 +7,14 @@
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "ole32.lib")
 
-// Structure pour faire passer les données à la fenêtre
+// Structure to pass data to the window
 struct InputDialogData {
     TCHAR* buffer;
     size_t maxLen;
     bool confirmed;
 };
 
-// Procédure de gestion de la fenêtre de saisie
+// Procedure for managing the input window
 LRESULT CALLBACK InputDialogProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     static InputDialogData* data = NULL;
@@ -27,29 +27,29 @@ LRESULT CALLBACK InputDialogProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             CREATESTRUCT* cs = (CREATESTRUCT*)lp;
             data = (InputDialogData*)cs->lpCreateParams;
 
-            // Texte d'instruction
-            CreateWindowEx(0, TEXT("STATIC"), TEXT("Entrez l'URL du dépôt Git public (HTTPS) :"),
+            // Instruction text
+            CreateWindowEx(0, TEXT("STATIC"), TEXT("Enter the URL of the public Git repository (HTTPS) :"),
                            WS_CHILD | WS_VISIBLE,
                            15, 15, 360, 20, hwnd, NULL, NULL, NULL);
 
-            // Champ de saisie (Edit Control)
+            // Input field (Edit Control)
             hEdit = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("EDIT"), TEXT(""),
                                    WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
                                    15, 40, 350, 24, hwnd, NULL, NULL, NULL);
 
             SetFocus(hEdit);
 
-            // Bouton OK
+            // OK button
             CreateWindowEx(0, TEXT("BUTTON"), TEXT("OK"),
                            WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
                            185, 75, 80, 25, hwnd, (HMENU)IDOK, NULL, NULL);
 
-            // Bouton Annuler
-            CreateWindowEx(0, TEXT("BUTTON"), TEXT("Annuler"),
+            // Cancel button
+            CreateWindowEx(0, TEXT("BUTTON"), TEXT("Cancel"),
                            WS_CHILD | WS_VISIBLE,
                            280, 75, 80, 25, hwnd, (HMENU)IDCANCEL, NULL, NULL);
 
-            // Application d'une police système propre (Segoe UI)
+            // Apply a clean system font (Segoe UI)
             HFONT hFont = CreateFont(-12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
                                      OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
                                      DEFAULT_PITCH | FF_DONTCARE, TEXT("Segoe UI"));
@@ -132,7 +132,7 @@ bool showInputDialog(HWND parentWindow, TCHAR* input, size_t maxLen)
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);
 
-    // Boucle de messages modale (gère aussi Entrée et Échap)
+    // Modal message loop (also handles Enter and Esc)
     MSG msg;
     while (IsWindow(hwnd) && GetMessage(&msg, NULL, 0, 0))
     {
@@ -170,7 +170,7 @@ bool browseForFolder(HWND parentWindow, TCHAR* folderPath, size_t maxLen)
     
     bi.hwndOwner = parentWindow;
     bi.pszDisplayName = displayName;
-    bi.lpszTitle = TEXT("Sélectionnez le dossier de destination pour le clonage :");
+    bi.lpszTitle = TEXT("Select the destination folder for cloning :");
     bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_EDITBOX;
 
     LPITEMIDLIST pidl = SHBrowseForFolder(&bi);
