@@ -34,16 +34,15 @@ A lightweight Notepad++ plugin that allows you to clone GitHub repositories dire
 Open your terminal or double-click the corresponding script depending on your target Notepad++ architecture:
 
 * For a **64-bit (x64)** build, run:
-  ```bash
-  build.bat
 
+```bash
+  build.bat
 ```
 
 * For a **32-bit (x86)** build, run:
 
 ```bash
 buildx86.bat
-
 ```
 
 
