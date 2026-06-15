@@ -20,7 +20,7 @@ A Notepad++ plugin that allows you to clone GitHub repositories directly from No
 
 ### Prerequisites
 
-- Visual Studio 2022 or later (with C++ compiler)
+- Visual Studio 2026 (with C++ compiler)
 - Git for Windows installed (for `git.exe`)
 - Windows SDK
 
