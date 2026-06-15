@@ -88,14 +88,23 @@ struct ShortcutKey
     UCHAR key;
 };
 
-// Plugin function item structure
-struct FuncItem
-{
-    TCHAR itemName[64];
-    void (*pFunc)();
+// Déclarations préalables pour le compilateur
+typedef void (*PFUNCPLUGINCMD)();
+
+struct shortcutKey {
+    bool _isCtrl;
+    bool _isAlt;
+    bool _isShift;
+    unsigned char _key;
+};
+
+// Définition propre de FuncItem
+struct FuncItem {
+    TCHAR _itemName[64];
+    PFUNCPLUGINCMD pFunc;
     int cmdID;
     bool init2Check;
-    ShortcutKey *pShortcutKey;
+    shortcutKey *pShortcutKey;
 };
 
 #endif // NOTEPAD_PLUS_MSGS_H

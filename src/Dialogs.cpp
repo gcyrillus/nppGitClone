@@ -7,37 +7,160 @@
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "ole32.lib")
 
+// Structure pour faire passer les données à la fenêtre
+struct InputDialogData {
+    TCHAR* buffer;
+    size_t maxLen;
+    bool confirmed;
+};
+
+// Procédure de gestion de la fenêtre de saisie
+LRESULT CALLBACK InputDialogProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    static InputDialogData* data = NULL;
+    static HWND hEdit = NULL;
+
+    switch (msg)
+    {
+        case WM_CREATE:
+        {
+            CREATESTRUCT* cs = (CREATESTRUCT*)lp;
+            data = (InputDialogData*)cs->lpCreateParams;
+
+            // Texte d'instruction
+            CreateWindowEx(0, TEXT("STATIC"), TEXT("Entrez l'URL du dépôt Git public (HTTPS) :"),
+                           WS_CHILD | WS_VISIBLE,
+                           15, 15, 360, 20, hwnd, NULL, NULL, NULL);
+
+            // Champ de saisie (Edit Control)
+            hEdit = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("EDIT"), TEXT(""),
+                                   WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
+                                   15, 40, 350, 24, hwnd, NULL, NULL, NULL);
+
+            SetFocus(hEdit);
+
+            // Bouton OK
+            CreateWindowEx(0, TEXT("BUTTON"), TEXT("OK"),
+                           WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
+                           185, 75, 80, 25, hwnd, (HMENU)IDOK, NULL, NULL);
+
+            // Bouton Annuler
+            CreateWindowEx(0, TEXT("BUTTON"), TEXT("Annuler"),
+                           WS_CHILD | WS_VISIBLE,
+                           280, 75, 80, 25, hwnd, (HMENU)IDCANCEL, NULL, NULL);
+
+            // Application d'une police système propre (Segoe UI)
+            HFONT hFont = CreateFont(-12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+                                     OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
+                                     DEFAULT_PITCH | FF_DONTCARE, TEXT("Segoe UI"));
+            if (!hFont) hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+
+            HWND hChild = GetWindow(hwnd, GW_CHILD);
+            while (hChild) {
+                SendMessage(hChild, WM_SETFONT, (WPARAM)hFont, TRUE);
+                hChild = GetWindow(hChild, GW_HWNDNEXT);
+            }
+            return 0;
+        }
+        case WM_COMMAND:
+        {
+            int id = LOWORD(wp);
+            if (id == IDOK)
+            {
+                if (hEdit && data)
+                {
+                    GetWindowText(hEdit, data->buffer, (int)data->maxLen);
+                }
+                if (data) data->confirmed = true;
+                DestroyWindow(hwnd);
+            }
+            else if (id == IDCANCEL)
+            {
+                if (data) data->confirmed = false;
+                DestroyWindow(hwnd);
+            }
+            return 0;
+        }
+        case WM_CLOSE:
+        {
+            DestroyWindow(hwnd);
+            return 0;
+        }
+        default:
+            return DefWindowProc(hwnd, msg, wp, lp);
+    }
+}
+
 bool showInputDialog(HWND parentWindow, TCHAR* input, size_t maxLen)
 {
-    // Create a simple input dialog using Windows API
-    // This creates a modal dialog for repository URL input
+    LPCWSTR className = TEXT("NppGitCloneInputDlg");
+    WNDCLASS wc = {0};
+    wc.lpfnWndProc = InputDialogProc;
+    wc.hInstance = GetModuleHandle(NULL);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+    wc.lpszClassName = className;
     
-    TCHAR dialogText[1024];
-    TCHAR inputBuffer[512] = TEXT("");
-    
-    _tcscpy_s(dialogText, sizeof(dialogText) / sizeof(TCHAR),
-              TEXT("Enter GitHub Repository URL:\n\nExample: https://github.com/username/repo.git"));
-    
-    // Use a simple input mechanism with MessageBox and edit control
-    // For a production plugin, you might want to create a proper dialog resource
-    
-    // For now, we'll use a basic approach:
-    // Show instructions and let user enter URL
-    int result = MessageBox(parentWindow, dialogText,
-                            TEXT("nppGitClone - Clone Repository"),
-                            MB_OKCANCEL | MB_ICONQUESTION);
-    
-    if (result == IDOK)
+    RegisterClass(&wc);
+
+    int width = 395;
+    int height = 150;
+    int x = 0, y = 0;
+    if (parentWindow)
     {
-        // In a real implementation, this would show an input dialog
-        // For now, we'll use a simple input box
-        // This is a limitation that can be improved with a proper resource dialog
-        
-        _tcscpy_s(input, maxLen, TEXT("https://github.com/username/repo.git"));
-        return true;
+        RECT rect;
+        GetWindowRect(parentWindow, &rect);
+        x = rect.left + (rect.right - rect.left - width) / 2;
+        y = rect.top + (rect.bottom - rect.top - height) / 2;
     }
-    
-    return false;
+
+    InputDialogData data = { input, maxLen, false };
+
+    if (parentWindow) EnableWindow(parentWindow, FALSE);
+
+    HWND hwnd = CreateWindowEx(WS_EX_DLGMODALFRAME, className, TEXT("nppGitClone - Cloner"),
+                               WS_POPUP | WS_CAPTION | WS_SYSMENU,
+                               x, y, width, height, parentWindow, NULL, wc.hInstance, &data);
+
+    if (!hwnd)
+    {
+        if (parentWindow) EnableWindow(parentWindow, TRUE);
+        UnregisterClass(className, wc.hInstance);
+        return false;
+    }
+
+    ShowWindow(hwnd, SW_SHOW);
+    UpdateWindow(hwnd);
+
+    // Boucle de messages modale (gère aussi Entrée et Échap)
+    MSG msg;
+    while (IsWindow(hwnd) && GetMessage(&msg, NULL, 0, 0))
+    {
+        if (msg.message == WM_KEYDOWN)
+        {
+            if (msg.wParam == VK_RETURN)
+            {
+                SendMessage(hwnd, WM_COMMAND, IDOK, 0);
+                continue;
+            }
+            if (msg.wParam == VK_ESCAPE)
+            {
+                SendMessage(hwnd, WM_COMMAND, IDCANCEL, 0);
+                continue;
+            }
+        }
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    if (parentWindow)
+    {
+        EnableWindow(parentWindow, TRUE);
+        SetFocus(parentWindow);
+    }
+
+    UnregisterClass(className, wc.hInstance);
+    return data.confirmed && (_tcslen(input) > 0);
 }
 
 bool browseForFolder(HWND parentWindow, TCHAR* folderPath, size_t maxLen)
@@ -47,7 +170,7 @@ bool browseForFolder(HWND parentWindow, TCHAR* folderPath, size_t maxLen)
     
     bi.hwndOwner = parentWindow;
     bi.pszDisplayName = displayName;
-    bi.lpszTitle = TEXT("Select destination folder for cloning repository");
+    bi.lpszTitle = TEXT("Sélectionnez le dossier de destination pour le clonage :");
     bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_EDITBOX;
 
     LPITEMIDLIST pidl = SHBrowseForFolder(&bi);
@@ -66,9 +189,6 @@ bool browseForFolder(HWND parentWindow, TCHAR* folderPath, size_t maxLen)
 
 void extractRepoName(const TCHAR* url, TCHAR* repoName, size_t maxLen)
 {
-    // Extract repository name from URL
-    // Example: https://github.com/username/repo.git -> repo
-    
     if (!url || !repoName)
         return;
     
@@ -81,7 +201,6 @@ void extractRepoName(const TCHAR* url, TCHAR* repoName, size_t maxLen)
 
     _tcscpy_s(repoName, maxLen, lastSlash + 1);
 
-    // Remove .git extension if present
     size_t len = _tcslen(repoName);
     if (len > 4 && _tcscmp(repoName + len - 4, TEXT(".git")) == 0)
     {

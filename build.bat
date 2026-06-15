@@ -1,95 +1,50 @@
 @echo off
 cls
-setlocal enabledelayedexpansion
+pause
 
+@chcp 65001 > nul
 echo ==================================================
-echo COMPILATION X64 : nppGitClone.dll (MSVC Native)
+echo COMPILATION X64 : nppGitClone.dll (Environnement Natif)
 echo ==================================================
+
+setlocal
 
 cd /d "%~dp0"
 
+:: Chemin vers les outils de build de Visual Studio
+set "VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools"
+set "VCVARS_PATH=%VS_PATH%\VC\Auxiliary\Build\vcvarsall.bat"
+
 if "%VSCMD_ARG_TGT_ARCH%"=="x64" (
-    echo [INFO] MSVC x64 environment already active. Starting build...
+    echo [INFO] Environnement MSVC x64 développeur déjà actif. Passage direct au build.
     goto compile
 )
 
-set "VS_PATH="
-if exist "C:\Program Files\Microsoft Visual Studio\2026\Community\VC\Auxiliary\Build\vcvarsall.bat" (
-    set "VS_PATH=C:\Program Files\Microsoft Visual Studio\2026\Community"
-    echo [FOUND] Visual Studio 2026 Community
-    goto found_vs
+if not exist "%VCVARS_PATH%" (
+    echo [ERREUR] Le script vcvarsall.bat est introuvable à l'adresse spécifiée.
+    echo Vérifiez le chemin VS_PATH dans ce fichier .bat
+    pause
+    exit /b
 )
 
-if exist "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" (
-    set "VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools"
-    echo [FOUND] Visual Studio 2026 BuildTools
-    goto found_vs
-)
+echo Configuration de l'environnement Windows SDK et MSVC en x64...
 
-if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" (
-    set "VS_PATH=C:\Program Files\Microsoft Visual Studio\2022\Community"
-    echo [FOUND] Visual Studio 2022 Community
-    goto found_vs
-)
-
-echo [ERREUR] Visual Studio ou BuildTools non trouve.
-pause
-exit /b 1
-
-:found_vs
-set "VCVARS_PATH=!VS_PATH!\VC\Auxiliary\Build\vcvarsall.bat"
-
-echo Configuration de l'environnement MSVC en x64...
 set "PATH=C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\"
 
-call "!VCVARS_PATH!" amd64
+call "%VCVARS_PATH%" amd64
 
 :compile
 echo.
-echo [*] Creating output directories...
-if not exist "bin\x64\Release" mkdir bin\x64\Release
-if not exist "obj" mkdir obj
-
-echo [*] Cleaning previous build...
-if exist "obj\*.obj" del obj\*.obj >nul 2>&1
-if exist "bin\x64\Release\nppGitClone.dll" del bin\x64\Release\nppGitClone.dll >nul 2>&1
+echo Compilation de nppGitClone.cpp...
+cl /O2 /MT /D UNICODE /D _UNICODE /EHsc /utf-8 /LD src\nppGitClone.cpp src\PluginDefinition.cpp src\Dialogs.cpp user32.lib shlwapi.lib gdi32.lib shell32.lib /I src\include /Fe:nppGitClone.dll /link delayimp.lib
 
 echo.
-echo [*] Compiling source files...
-echo.
-
-cl /O2 /MD /W4 /EHsc /D_CRT_SECURE_NO_WARNINGS /Isrc\include /Fo.\obj\\ src\PluginDefinition.cpp src\nppGitClone.cpp src\Dialogs.cpp
-
-if errorlevel 1 (
-    echo.
-    echo [ERREUR] Compilation echouee.
-    echo.
-    pause
-    exit /b 1
+if %ERRORLEVEL% EQU 0 (
+    echo [SUCCÈS] nppGitClone.dll 64-bit générée avec succès !
+) else (
+    echo [ERREUR] La compilation a échoué.
 )
-
-echo.
-echo [OK] Compilation reussie.
-echo.
-echo [*] Linking DLL...
-echo.
-
-link /DLL /OUT:bin\x64\Release\nppGitClone.dll obj\*.obj user32.lib kernel32.lib shell32.lib shlwapi.lib
-
-if errorlevel 1 (
-    echo.
-    echo [ERREUR] Linking echoue.
-    echo.
-    pause
-    exit /b 1
-)
-
-echo.
 echo ==================================================
-echo [SUCCES] nppGitClone.dll generee !
-echo ==================================================
-echo.
-echo Output: bin\x64\Release\nppGitClone.dll
-echo.
+
 endlocal
 pause
