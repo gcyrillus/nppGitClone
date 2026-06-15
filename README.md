@@ -40,6 +40,7 @@ Open your terminal or double-click the corresponding script depending on your ta
 ```
 
 * For a **32-bit (x86)** build, run:
+
 ```bash
 buildx86.bat
 
