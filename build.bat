@@ -11,19 +11,40 @@ echo nppGitClone - Build Script (x64)
 echo ============================================
 echo.
 
-REM Set up MSVC compiler environment
+REM Try to set up MSVC compiler environment
+REM First try Visual Studio 2026
 echo [*] Setting up MSVC compiler environment...
-call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
 
-if errorlevel 1 (
-    echo.
-    echo [ERROR] Could not find Visual Studio 2022 compiler.
-    echo Please ensure Visual Studio 2022 is installed with C++ support.
-    echo.
-    pause
-    exit /b 1
+if exist "C:\Program Files\Microsoft Visual Studio\2026\Community\VC\Auxiliary\Build\vcvars64.bat" (
+    call "C:\Program Files\Microsoft Visual Studio\2026\Community\VC\Auxiliary\Build\vcvars64.bat"
+    goto :compiler_ok
 )
 
+REM Try Visual Studio 2022
+if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" (
+    call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+    goto :compiler_ok
+)
+
+REM Try Professional edition
+if exist "C:\Program Files\Microsoft Visual Studio\2026\Professional\VC\Auxiliary\Build\vcvars64.bat" (
+    call "C:\Program Files\Microsoft Visual Studio\2026\Professional\VC\Auxiliary\Build\vcvars64.bat"
+    goto :compiler_ok
+)
+
+REM Try Enterprise edition
+if exist "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\VC\Auxiliary\Build\vcvars64.bat" (
+    call "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+    goto :compiler_ok
+)
+
+echo [ERROR] Could not find Visual Studio compiler.
+echo Please ensure Visual Studio 2022 or 2026 is installed with C++ support.
+echo.
+pause
+exit /b 1
+
+:compiler_ok
 echo [OK] Compiler environment ready.
 echo.
 
@@ -87,11 +108,11 @@ echo Output: bin\x64\Release\nppGitClone.dll
 echo.
 echo Installation Instructions:
 echo 1. Copy nppGitClone.dll to:
-    echo    C:\Program Files\Notepad++\plugins\nppGitClone\
-    echo.
+echo    C:\Program Files\Notepad++\plugins\nppGitClone\
+echo.
 echo 2. Create the folder if it doesn't exist:
-    echo    mkdir "C:\Program Files\Notepad++\plugins\nppGitClone"
-    echo.
+echo    mkdir "C:\Program Files\Notepad++\plugins\nppGitClone"
+echo.
 echo 3. Restart Notepad++
 echo.
 echo ============================================
