@@ -36,24 +36,6 @@ The batch file will:
 - Link with required Windows libraries
 - Generate `nppGitClone.dll` in the `bin\x64\Release` directory
 
-### Manual compilation
-
-If you prefer to compile manually:
-
-```bash
-REM Set up MSVC compiler
-"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
-
-Rem Create output directory
-mkdir obj
-mkdir bin\x64\Release
-
-REM Compile all source files
-cl /MD /O2 /W4 /EHsc /D_CRT_SECURE_NO_WARNINGS /Isrc\include /Fo.\obj\\ src\PluginDefinition.cpp src\nppGitClone.cpp src\Dialogs.cpp
-
-REM Link to create DLL
-link /DLL /OUT:bin\x64\Release\nppGitClone.dll obj\*.obj user32.lib kernel32.lib shell32.lib
-```
 
 ## Usage
 
@@ -77,8 +59,6 @@ nppGitClone/
 │       ├── Notepad_plus_msgs.h  # Notepad++ API
 │       ├── Scintilla.h          # Scintilla editor messages
 │       └── resource.h           # Resource IDs
-├── bin/                         # Build output directory (generated)
-├── obj/                         # Object files directory (generated)
 ├── build.bat                    # Build script
 ├── README.md                    # This file
 └── .gitignore                   # Git ignore rules
