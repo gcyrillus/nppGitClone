@@ -64,6 +64,21 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam
 // ============================================================================
 // Plugin Command Implementation
 // ============================================================================
+bool isValidGitUrl(const TCHAR* url)
+{
+    if (!url || _tcslen(url) == 0) return false;
+
+    // Caractères strictement interdits dans une URL Git légitime 
+    // qui pourraient altérer la ligne de commande (notamment les guillemets)
+    const TCHAR* forbiddenChars = TEXT("\"';`<>");
+    
+    if (_tcspbrk(url, forbiddenChars) != NULL)
+    {
+        return false; // Contient un caractère dangereux
+    }
+    return true;
+}
+
 void cloneRepositoryCommand()
 {
     TCHAR repoUrl[512] = TEXT("");
@@ -118,9 +133,21 @@ void cloneRepositoryCommand()
     }
     _tcscat_s(fullPath, sizeof(fullPath) / sizeof(TCHAR), repoName);
     
+    // --- 1. URL SANITIZATION AND VALIDATION ---
+    if (!isValidGitUrl(repoUrl))
+    {
+        MessageBox(nppData._nppHandle, 
+            TEXT("The repository URL contains invalid or dangerous characters.\nOperation cancelled for security reasons."), 
+            TEXT("nppGitClone - Security"), MB_OK | MB_ICONERROR);
+        return;
+    }
+
+    /// --- 2. REMOVAL OF CMD /C ---
+    // We call "git" directly. Quoted arguments are isolated at the system level,
+    // making shell-type command injections (&, |, &&) completely harmless.
     TCHAR command[1024];
     _stprintf_s(command, sizeof(command) / sizeof(TCHAR), 
-    TEXT("cmd /c git clone \"%s\" \"%s\""), repoUrl, fullPath);
+                TEXT("git clone \"%s\" \"%s\""), repoUrl, fullPath);
     
     STARTUPINFO si = {0};
     si.cb = sizeof(si);
@@ -129,11 +156,12 @@ void cloneRepositoryCommand()
     
     PROCESS_INFORMATION pi = {0};
     
+    // CreateProcess will automatically look for "git.exe" in the system PATH
     if (!CreateProcess(NULL, command, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
     {
         MessageBox(nppData._nppHandle, 
-            TEXT("Impossible d'exécuter git clone.\n\nVérifiez que Git est bien installé."),
-        TEXT("nppGitClone - Erreur"), MB_OK | MB_ICONERROR);
+            TEXT("Failed to execute git clone.\n\nPlease ensure Git is installed and present in your system PATH environment variable."),
+            TEXT("nppGitClone - Error"), MB_OK | MB_ICONERROR);
         return;
     }
     
